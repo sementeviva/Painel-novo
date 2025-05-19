@@ -69,7 +69,13 @@ def estatisticas():
 @bp.route('/criar_usuario')
 def criar_usuario():
     from werkzeug.security import generate_password_hash
-    user = User(nome='Admin', email='admin@admin.com', senha=generate_password_hash('admin123'))
-    db.session.add(user)
-    db.session.commit()
-    return "Usuário criado!"
+    try:
+        if not User.query.filter_by(email='admin@admin.com').first():
+            user = User(nome='Admin', email='admin@admin.com', senha=generate_password_hash('admin123'))
+            db.session.add(user)
+            db.session.commit()
+            return "Usuário criado com sucesso!"
+        else:
+            return "Usuário já existe."
+    except Exception as e:
+        return f"Erro ao criar usuário: {e}"

@@ -66,3 +66,10 @@ def estatisticas():
         return redirect(url_for('main.login'))
     total_conversas = Conversa.query.count()
     return render_template('estatisticas.html', total_conversas=total_conversas)
+@bp.route('/criar_usuario')
+def criar_usuario():
+    from werkzeug.security import generate_password_hash
+    user = User(nome='Admin', email='admin@admin.com', senha=generate_password_hash('admin123'))
+    db.session.add(user)
+    db.session.commit()
+    return "Usuário criado!"

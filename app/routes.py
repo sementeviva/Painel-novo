@@ -1,5 +1,6 @@
-from flask import Blueprint, render_template, request, redirect, url_for
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from app.models import db, User, Cliente, Conversa
+from werkzeug.security import check_password_hash
 
 bp = Blueprint('main', __name__)
 
@@ -10,17 +11,33 @@ def index():
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        return redirect(url_for('main.dashboard'))
+        email = request.form['email']
+        senha = request.form['senha']
+        user = User.query.filter_by(email=email).first()
+        if user and check_password_hash(user.senha, senha):
+            session['user_id'] = user.id
+            return redirect(url_for('main.dashboard'))
+        else:
+            flash('Credenciais inválidas. Tente novamente.')
     return render_template('login.html')
+
+@bp.route('/logout')
+def logout():
+    session.pop('user_id', None)
+    return redirect(url_for('main.login'))
 
 @bp.route('/dashboard')
 def dashboard():
+    if 'user_id' not in session:
+        return redirect(url_for('main.login'))
     total_clientes = Cliente.query.count()
     total_conversas = Conversa.query.count()
     return render_template('dashboard.html', total_clientes=total_clientes, total_conversas=total_conversas)
 
 @bp.route('/cadastrar_cliente', methods=['GET', 'POST'])
 def cadastrar_cliente():
+    if 'user_id' not in session:
+        return redirect(url_for('main.login'))
     if request.method == 'POST':
         nome = request.form['nome']
         telefone = request.form['telefone']
@@ -32,6 +49,8 @@ def cadastrar_cliente():
 
 @bp.route('/treinar_bot', methods=['GET', 'POST'])
 def treinar_bot():
+    if 'user_id' not in session:
+        return redirect(url_for('main.login'))
     if request.method == 'POST':
         pergunta = request.form['pergunta']
         resposta = request.form['resposta']
@@ -43,5 +62,7 @@ def treinar_bot():
 
 @bp.route('/estatisticas')
 def estatisticas():
+    if 'user_id' not in session:
+        return redirect(url_for('main.login'))
     total_conversas = Conversa.query.count()
     return render_template('estatisticas.html', total_conversas=total_conversas)
